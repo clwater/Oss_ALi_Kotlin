@@ -1,6 +1,7 @@
 package com.clwater.oss_android
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -20,17 +21,41 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+import com.clwater.oss_android.manager.FuelManager
+import com.clwater.oss_android.manager.FuelManager.STSModelCallBack
 import com.clwater.oss_android.ui.theme.Oss_AndroidTheme
+import com.google.gson.Gson
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initView()
 
-        ALiOssManager.
+        initData()
+
+
+
+//        ALiOssManager.
     }
+
+    private fun initData() {
+        val callback: STSModelCallBack = object : STSModelCallBack {
+            override fun fail() {}
+            override fun call(stsModel: STSModel) {
+                Log.d("gzb", "STSModel: ${Gson().toJson(stsModel)}")
+                genALiOssInfo(stsModel)
+            }
+        }
+        FuelManager.getToken(callback)
+    }
+
+    private fun genALiOssInfo(stsModel: STSModel){
+        Constants.OSS_ACCESS_KEY_ID = stsModel.AccessKeyId
+        Constants.OSS_ACCESS_KEY_SECRET = stsModel.AccessKeySecret
+        Constants.OSS_STS_TOKEN = stsModel.SecurityToken
+    }
+
 
     private fun initView() {
         setContent(content = {
@@ -57,7 +82,10 @@ fun Greeting(title: String) {
             Image(
                 painter = painterResource(id = R.mipmap.test),
                 contentDescription = "contentDescription",
-                modifier = Modifier.size(100.dp).clip(CircleShape).border(1.5.dp, MaterialTheme.colors.secondary, CircleShape)
+                modifier = Modifier
+                    .size(100.dp)
+                    .clip(CircleShape)
+                    .border(1.5.dp, MaterialTheme.colors.secondary, CircleShape)
             )
             Text(text = "Hello")
         }

@@ -1,4 +1,4 @@
-package com.clwater.oss_android
+package com.clwater.oss_android.manager
 
 import android.content.Context
 import android.util.Log

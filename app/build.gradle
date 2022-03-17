@@ -60,4 +60,11 @@ dependencies {
     debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"
 
     implementation 'com.aliyun.dpa:oss-android-sdk:2.9.11'
+
+    implementation 'com.google.code.gson:gson:2.9.0'
+
+    //core
+    implementation 'com.github.kittinunf.fuel:fuel:2.3.1'
+    // if you are working in KMM project
+    implementation("com.github.kittinunf.result:result:3.1.0") //for Kotlin Multiplatform support
 }
