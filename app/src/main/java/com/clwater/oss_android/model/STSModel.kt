@@ -1,4 +1,4 @@
-package com.clwater.oss_android
+package com.clwater.oss_android.model
 
 /**
  * @author: gengzhibo

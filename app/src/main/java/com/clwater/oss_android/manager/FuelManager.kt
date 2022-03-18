@@ -1,7 +1,7 @@
 package com.clwater.oss_android.manager
 
 import com.clwater.oss_android.Constants
-import com.clwater.oss_android.STSModel
+import com.clwater.oss_android.model.STSModel
 import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.result.Result
 import com.google.gson.Gson

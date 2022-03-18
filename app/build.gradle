@@ -67,4 +67,6 @@ dependencies {
     implementation 'com.github.kittinunf.fuel:fuel:2.3.1'
     // if you are working in KMM project
     implementation("com.github.kittinunf.result:result:3.1.0") //for Kotlin Multiplatform support
+
+    implementation 'com.github.CymChad:BaseRecyclerViewAdapterHelper:3.0.7'
 }

@@ -37,29 +37,31 @@ object ALiOssManager {
         oss = OSSClient(context, Constants.endpoint, credentialProvider)
     }
 
-    // 分页列举所有object
-    fun getAllObject() {
-        do {
-            val task = getObjectList()
-            // 阻塞等待请求完成获取NextMarker，请求下一页时需要将请求的marker设置为上一页请求返回的NextMarker。第一页无需设置。
-            // 示例中通过循环分页列举数据，因此需要阻塞等待请求完成获取NextMarker才能请求下一页数据，实际使用时可根据实际场景判断是否需要阻塞。
-            task.waitUntilFinished()
-        } while (!isCompleted)
-    }
+//    // 分页列举所有object
+//    fun getAllObject() {
+//        do {
+//            val task = getObjectList()
+//            // 阻塞等待请求完成获取NextMarker，请求下一页时需要将请求的marker设置为上一页请求返回的NextMarker。第一页无需设置。
+//            // 示例中通过循环分页列举数据，因此需要阻塞等待请求完成获取NextMarker才能请求下一页数据，实际使用时可根据实际场景判断是否需要阻塞。
+//            task.waitUntilFinished()
+//        } while (!isCompleted)
+//    }
 
     // 列举一页文件。
-    fun getObjectList(): OSSAsyncTask<*> {
+    fun getObjectList(callback: ALiOssCallBack) {
         val request = ListObjectsRequest(Constants.BUCKET_NAME)
         // 填写每页返回文件的最大个数。如果不设置此参数，则默认值为100，maxkeys的取值不能大于1000。
         request.maxKeys = 20
         request.marker = marker
-        val task: OSSAsyncTask<*> = oss.asyncListObjects(
+        oss.asyncListObjects(
             request,
             object : OSSCompletedCallback<ListObjectsRequest?, ListObjectsResult> {
                 override fun onSuccess(request: ListObjectsRequest?, result: ListObjectsResult) {
                     for (objectSummary in result.objectSummaries) {
                         Log.i("ListObjects", Gson().toJson(objectSummary))
                     }
+                    callback.onResult(request, result)
+
                     // 最后一页。
                     if (!result.isTruncated) {
                         isCompleted = true
@@ -75,6 +77,7 @@ object ALiOssManager {
                     serviceException: ServiceException
                 ) {
                     isCompleted = true
+                    callback.onFail(request, clientException, serviceException)
                     // 请求异常。
                     if (clientException != null) {
                         // 客户端异常，例如网络异常等。
@@ -90,7 +93,12 @@ object ALiOssManager {
                 }
             })
 
-        return  task
+    }
 
+    interface ALiOssCallBack{
+        fun onResult(request: ListObjectsRequest?, result: ListObjectsResult)
+        fun onFail(request: ListObjectsRequest?,
+                   clientException: ClientException,
+                   serviceException: ServiceException)
     }
 }
