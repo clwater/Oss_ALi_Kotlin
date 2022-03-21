@@ -5,32 +5,41 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.alibaba.sdk.android.oss.ClientException
-import com.alibaba.sdk.android.oss.ServiceException
-import com.alibaba.sdk.android.oss.model.ListObjectsRequest
-import com.alibaba.sdk.android.oss.model.ListObjectsResult
+import androidx.lifecycle.ViewModelProvider
 import com.clwater.oss_android.manager.ALiOssManager
 import com.clwater.oss_android.model.OssFileModel
+import com.clwater.oss_android.model.STSModel
 import com.clwater.oss_android.ui.theme.Oss_AndroidTheme
+import com.clwater.oss_android.viewmodel.MainViewModel
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
+
 class MainActivity : ComponentActivity() {
     lateinit var context: Context
-    val list: MutableList<OssFileModel>  = ArrayList()
+//    val list: MutableList<OssFileModel>  = ArrayList()
+//    lateinit var mainViewModel: MainViewModel;
+    private val mainViewModel:MainViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         initView()
+
+//        mainViewModel = ViewModelProvider(this)[MainViewModel::class.java]
 
         context = this
         initData()
@@ -40,35 +49,26 @@ class MainActivity : ComponentActivity() {
 
     private fun initData() {
         ALiOssManager.init(this)
-
-
-
-        val callback = object : ALiOssManager.ALiOssCallBack {
-            override fun onResult(request: ListObjectsRequest?, result: ListObjectsResult) {
-                updateListInfo(Gson().toJson(result.objectSummaries), true)
-            }
-            override fun onFail(
-                request: ListObjectsRequest?,
-                clientException: ClientException,
-                serviceException: ServiceException
-            ) {
-            }
+//        mainViewModel.stsModel.observe(this){
+//            Log.d("gzb", "" + "$it")
+//        }
+        mainViewModel.test.observe(this){
+            Log.d("gzb", "" + "$it")
         }
+        mainViewModel.getSTSInfo()
 
-
-        ALiOssManager.getObjectList(callback)
     }
 
-    private fun updateListInfo(result: String, isFirst: Boolean) {
-        Log.d("gzb", "result: " + result)
-        val itemType = object : TypeToken<List<OssFileModel>>() {}.type
-        var _list: List<OssFileModel> = Gson().fromJson(result, itemType)
-
-        if (isFirst){
-            list.clear()
-            list.addAll(_list)
-        }
-    }
+//    private fun updateListInfo(result: String, isFirst: Boolean) {
+//        Log.d("gzb", "result: " + result)
+//        val itemType = object : TypeToken<List<OssFileModel>>() {}.type
+//        var _list: List<OssFileModel> = Gson().fromJson(result, itemType)
+//
+//        if (isFirst){
+////            list.clear()
+////            list.addAll(_list)
+//        }
+//    }
 
 //    private fun initData() {
 //        val callback: STSModelCallBack = object : STSModelCallBack {
@@ -108,6 +108,7 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun Greeting(title: String) {
+        val list: List<OssFileModel> by mainViewModel.stsModel.observeAsState(listOf())
         Column() {
             TopAppBar(title = { Text(text = title) })
             val scrollState = rememberScrollState()
