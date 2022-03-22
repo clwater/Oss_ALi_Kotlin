@@ -28,30 +28,15 @@ object ALiOssManager {
     private lateinit var oss: OSS
     fun init(context: Context){
         val credentialProvider = OSSAuthCredentialsProvider(Constants.STS_SERVER_URL)
-//        val credentialProvider: OSSCredentialProvider = OSSStsTokenCredentialProvider(
-//            Constants.OSS_ACCESS_KEY_ID,
-//            Constants.OSS_ACCESS_KEY_SECRET,
-//            Constants.OSS_STS_TOKEN
-//        )
-
         oss = OSSClient(context, Constants.endpoint, credentialProvider)
     }
 
-//    // 分页列举所有object
-//    fun getAllObject() {
-//        do {
-//            val task = getObjectList()
-//            // 阻塞等待请求完成获取NextMarker，请求下一页时需要将请求的marker设置为上一页请求返回的NextMarker。第一页无需设置。
-//            // 示例中通过循环分页列举数据，因此需要阻塞等待请求完成获取NextMarker才能请求下一页数据，实际使用时可根据实际场景判断是否需要阻塞。
-//            task.waitUntilFinished()
-//        } while (!isCompleted)
-//    }
 
     // 列举一页文件。
     fun getObjectList(callback: ALiOssCallBack) {
         val request = ListObjectsRequest(Constants.BUCKET_NAME)
         // 填写每页返回文件的最大个数。如果不设置此参数，则默认值为100，maxkeys的取值不能大于1000。
-        request.maxKeys = 20
+        request.maxKeys = 2
         request.marker = marker
         oss.asyncListObjects(
             request,

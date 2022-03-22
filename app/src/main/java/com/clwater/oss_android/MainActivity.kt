@@ -50,9 +50,9 @@ class MainActivity : ComponentActivity() {
 
     private fun initData() {
         ALiOssManager.init(this)
-        mainViewModel.stsModel.observe(this){
-            Log.d("gzb", "" + Gson().toJson(it))
-        }
+//        mainViewModel.stsModel.observe(this){
+//            Log.d("gzb", "" + Gson().toJson(it))
+//        }
         mainViewModel.getSTSInfo()
 
     }
