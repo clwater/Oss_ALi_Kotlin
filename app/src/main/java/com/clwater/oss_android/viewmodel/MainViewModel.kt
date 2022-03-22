@@ -1,5 +1,6 @@
 package com.clwater.oss_android.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.alibaba.sdk.android.oss.ClientException
@@ -19,6 +20,7 @@ class MainViewModel : ViewModel() {
         val callback = object : ALiOssManager.ALiOssCallBack {
             override fun onResult(request: ListObjectsRequest?, result: ListObjectsResult) {
                 val itemType = object : TypeToken<List<OssFileModel>>() {}.type
+                Log.d("gzb", "" + Gson().toJson(result))
                 stsModel.postValue(Gson().fromJson( Gson().toJson(result.objectSummaries), itemType))
             }
             override fun onFail(
