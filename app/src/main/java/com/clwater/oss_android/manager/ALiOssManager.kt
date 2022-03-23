@@ -22,7 +22,7 @@ import com.google.gson.Gson
  * @date: 2022/3/17
  */
 object ALiOssManager {
-    private var marker: String? = null
+//    private var marker: String? = null
     private var isCompleted = false
 
     private lateinit var oss: OSS
@@ -33,7 +33,7 @@ object ALiOssManager {
 
 
     // 列举一页文件。
-    fun getObjectList(callback: ALiOssCallBack) {
+    fun getObjectList(callback: ALiOssCallBack, marker: String) {
         val request = ListObjectsRequest(Constants.BUCKET_NAME)
         // 填写每页返回文件的最大个数。如果不设置此参数，则默认值为100，maxkeys的取值不能大于1000。
         request.maxKeys = 2
@@ -53,7 +53,7 @@ object ALiOssManager {
                         return
                     }
                     // 下一次列举文件的marker。
-                    marker = result.nextMarker
+//                    marker = result.nextMarker
                 }
 
                 override fun onFailure(

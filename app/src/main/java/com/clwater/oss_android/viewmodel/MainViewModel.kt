@@ -16,23 +16,32 @@ import kotlin.math.log
 class MainViewModel : ViewModel() {
     var stsModel: MutableLiveData<List<OssFileModel>> = MutableLiveData<List<OssFileModel>>()
     var errorCode: MutableLiveData<String> = MutableLiveData()
+    var isFinish: MutableLiveData<Boolean> = MutableLiveData()
 
     var list: MutableList<OssFileModel> = ArrayList()
 
+    var nextMarker = ""
     fun getSTSInfo(){
+        nextMarker = ""
+        getSTSInfo(nextMarker)
+    }
+
+    fun getSTSInfoNext(){
+        getSTSInfo(nextMarker)
+    }
+
+    fun getSTSInfo(marker: String){
         val callback = object : ALiOssManager.ALiOssCallBack {
             override fun onResult(request: ListObjectsRequest?, result: ListObjectsResult) {
                 val itemType = object : TypeToken<List<OssFileModel>>() {}.type
                 list.addAll(Gson().fromJson( Gson().toJson(result.objectSummaries), itemType))
-                Log.d("gzb", "result.objectSummaries: " + Gson().toJson(result.objectSummaries))
-                Log.d("gzb", "list: " + Gson().toJson(list))
+
                 if (result.isTruncated){
-                    Thread.sleep(100)
-                    getSTSInfo()
-                }else{
-                    Thread.sleep(100)
-                    Log.d("gzb", "r: " + Gson().toJson(list))
-                    stsModel.postValue(list)}
+                    isFinish.postValue(true)
+                }
+//                getSTSInfo(result.nextMarker)
+                nextMarker = result.nextMarker
+                stsModel.postValue(list)
             }
             override fun onFail(
                 request: ListObjectsRequest?,
@@ -42,7 +51,7 @@ class MainViewModel : ViewModel() {
                 errorCode.postValue("fail")
             }
         }
-        ALiOssManager.getObjectList(callback)
+        ALiOssManager.getObjectList(callback, marker)
     }
 
 
