@@ -36,7 +36,7 @@ class MainViewModel : ViewModel() {
                 val itemType = object : TypeToken<List<OssFileModel>>() {}.type
                 list.addAll(Gson().fromJson( Gson().toJson(result.objectSummaries), itemType))
 
-                if (result.isTruncated){
+                if (result.isTruncated.not()){
                     isFinish.postValue(true)
                 }
 //                getSTSInfo(result.nextMarker)

@@ -9,7 +9,6 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
@@ -17,26 +16,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProvider
 import coil.compose.AsyncImagePainter
-import coil.compose.ImagePainter
 import coil.compose.rememberAsyncImagePainter
-import coil.compose.rememberImagePainter
 import coil.request.ImageRequest
 import com.clwater.oss_android.manager.ALiOssManager
 import com.clwater.oss_android.model.OssFileModel
-import com.clwater.oss_android.model.STSModel
 import com.clwater.oss_android.ui.theme.Oss_AndroidTheme
 import com.clwater.oss_android.viewmodel.MainViewModel
-import com.google.android.material.color.MaterialColors
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 
 
 class MainActivity : ComponentActivity() {
@@ -81,14 +70,18 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun OssFile(list: List<OssFileModel>){
+        val isFinish = mainViewModel.isFinish.observeAsState(false)
         LazyColumn(modifier = Modifier.fillMaxHeight()){
-            items(list){
-                Text(text = "${it.key}")
-                Box() {
-                    if (it.size != "0") {
+
+
+            list.forEach { item ->
+                item {
+                    Text(text = item.key)
+                    Box() {
+                    if (item.size != "0") {
                         val painter = rememberAsyncImagePainter(
                             ImageRequest.Builder(LocalContext.current)
-                                .data(data = "https://" + Constants.BUCKET_NAME + ".oss-cn-beijing.aliyuncs.com/" + it.key)
+                                .data(data = "https://" + Constants.BUCKET_NAME + ".oss-cn-beijing.aliyuncs.com/" + item.key)
                                 .apply(block = fun ImageRequest.Builder.() {
                                     crossfade(true)
                                 }).build()
@@ -108,9 +101,16 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
+                } }
+            }
+            if (isFinish.value.not()) {
+                item {
+                    CircularProgressIndicator(color = Color.Red)
+                    LaunchedEffect(Unit) {
+                        mainViewModel.getSTSInfoNext()
+                    }
                 }
             }
-
         }
 
     }
