@@ -7,6 +7,7 @@ import com.alibaba.sdk.android.oss.ClientException
 import com.alibaba.sdk.android.oss.ServiceException
 import com.alibaba.sdk.android.oss.model.ListObjectsRequest
 import com.alibaba.sdk.android.oss.model.ListObjectsResult
+import com.alibaba.sdk.android.oss.model.OSSObjectSummary
 import com.clwater.oss_android.manager.ALiOssManager
 import com.clwater.oss_android.model.OssFileModel
 import com.google.gson.Gson
@@ -14,11 +15,11 @@ import com.google.gson.reflect.TypeToken
 import kotlin.math.log
 
 class MainViewModel : ViewModel() {
-    var stsModel: MutableLiveData<List<OssFileModel>> = MutableLiveData<List<OssFileModel>>()
+    var stsModel: MutableLiveData<List<OSSObjectSummary>> = MutableLiveData<List<OSSObjectSummary>>()
     var errorCode: MutableLiveData<String> = MutableLiveData()
     var isFinish: MutableLiveData<Boolean> = MutableLiveData()
 
-    var list: MutableList<OssFileModel> = ArrayList()
+    var list: MutableList<OSSObjectSummary> = ArrayList()
 
     var nextMarker = ""
     fun getSTSInfo(){
@@ -33,8 +34,8 @@ class MainViewModel : ViewModel() {
     fun getSTSInfo(marker: String){
         val callback = object : ALiOssManager.ALiOssCallBack {
             override fun onResult(request: ListObjectsRequest?, result: ListObjectsResult) {
-                val itemType = object : TypeToken<List<OssFileModel>>() {}.type
-                list.addAll(Gson().fromJson( Gson().toJson(result.objectSummaries), itemType))
+//                val itemType = object : TypeToken<List<OssFileModel>>() {}.type
+                list.addAll(result.objectSummaries)
 
                 if (result.isTruncated.not()){
                     isFinish.postValue(true)

@@ -34,9 +34,10 @@ object ALiOssManager {
 
     // 列举一页文件。
     fun getObjectList(callback: ALiOssCallBack, marker: String) {
+        Log.d("gzb", "marker: $marker");
         val request = ListObjectsRequest(Constants.BUCKET_NAME)
         // 填写每页返回文件的最大个数。如果不设置此参数，则默认值为100，maxkeys的取值不能大于1000。
-        request.maxKeys = 10
+        request.maxKeys = 20
         request.marker = marker
         oss.asyncListObjects(
             request,

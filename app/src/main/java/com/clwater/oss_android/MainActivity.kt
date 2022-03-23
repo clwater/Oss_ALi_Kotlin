@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
+import com.alibaba.sdk.android.oss.model.OSSObjectSummary
 import com.clwater.oss_android.manager.ALiOssManager
 import com.clwater.oss_android.model.OssFileModel
 import com.clwater.oss_android.ui.theme.Oss_AndroidTheme
@@ -43,14 +44,13 @@ class MainActivity : ComponentActivity() {
     private fun initData() {
         ALiOssManager.init(this)
         mainViewModel.stsModel.observe(this){
-            Log.d("gzb", "=================:" + Gson().toJson(it))
             updateView(it)
         }
-        mainViewModel.getSTSInfo()
+//        mainViewModel.getSTSInfo()
 
     }
 
-    private fun updateView(list: List<OssFileModel>){
+    private fun updateView(list: List<OSSObjectSummary>){
         setContent(content = {
             Oss_AndroidTheme {
                 // A surface container using the 'background' color from the theme
@@ -68,17 +68,28 @@ class MainActivity : ComponentActivity() {
         updateView(listOf())
     }
 
+    @OptIn(ExperimentalFoundationApi::class)
     @Composable
-    fun OssFile(list: List<OssFileModel>){
+    fun OssFile(list: List<OSSObjectSummary>){
         val isFinish = mainViewModel.isFinish.observeAsState(false)
+        var lastCharacter = ""
         LazyColumn(modifier = Modifier.fillMaxHeight()){
 
-
             list.forEach { item ->
+
+                if(item.key.split("/")[0] != lastCharacter){
+                    stickyHeader {
+                        Box(modifier = Modifier.fillMaxWidth().background(Color.Green)){
+                            Text(text = item.key.split("/")[0])
+                        }
+                    }
+                }
+                lastCharacter = item.key.split("/")[0]
+
                 item {
                     Text(text = item.key)
                     Box() {
-                    if (item.size != "0") {
+                    if (item.size != 0L) {
                         val painter = rememberAsyncImagePainter(
                             ImageRequest.Builder(LocalContext.current)
                                 .data(data = "https://" + Constants.BUCKET_NAME + ".oss-cn-beijing.aliyuncs.com/" + item.key)
@@ -115,7 +126,7 @@ class MainActivity : ComponentActivity() {
 
     }
     @Composable
-    fun Greeting(title: String, list: List<OssFileModel>) {
+    fun Greeting(title: String, list: List<OSSObjectSummary>) {
 //        val list by mainViewModel.stsModel.observeAsState(listOf())
 //        val painter = rememberCoilPainter("")
         Column() {
