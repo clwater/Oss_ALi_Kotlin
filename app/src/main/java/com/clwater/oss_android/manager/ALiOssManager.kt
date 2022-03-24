@@ -37,15 +37,13 @@ object ALiOssManager {
         Log.d("gzb", "marker: $marker");
         val request = ListObjectsRequest(Constants.BUCKET_NAME)
         // 填写每页返回文件的最大个数。如果不设置此参数，则默认值为100，maxkeys的取值不能大于1000。
-        request.maxKeys = 20
+        request.maxKeys = 100
         request.marker = marker
+//        request.prefix = "image_library_clwater"
         oss.asyncListObjects(
             request,
             object : OSSCompletedCallback<ListObjectsRequest?, ListObjectsResult> {
                 override fun onSuccess(request: ListObjectsRequest?, result: ListObjectsResult) {
-                    for (objectSummary in result.objectSummaries) {
-                        Log.i("ListObjects", Gson().toJson(objectSummary))
-                    }
                     callback.onResult(request, result)
 
                     // 最后一页。
@@ -53,8 +51,6 @@ object ALiOssManager {
                         isCompleted = true
                         return
                     }
-                    // 下一次列举文件的marker。
-//                    marker = result.nextMarker
                 }
 
                 override fun onFailure(
@@ -71,10 +67,10 @@ object ALiOssManager {
                     }
                     if (serviceException != null) {
                         // 服务端异常。
-                        Log.e("ErrorCode", serviceException.errorCode)
-                        Log.e("RequestId", serviceException.requestId)
-                        Log.e("HostId", serviceException.hostId)
-                        Log.e("RawMessage", serviceException.rawMessage)
+                        Log.e("gzb", serviceException.errorCode)
+                        Log.e("gzb", serviceException.requestId)
+                        Log.e("gzb", serviceException.hostId)
+                        Log.e("gzb", serviceException.rawMessage)
                     }
                 }
             })

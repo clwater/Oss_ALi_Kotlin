@@ -34,14 +34,15 @@ class MainViewModel : ViewModel() {
     fun getSTSInfo(marker: String){
         val callback = object : ALiOssManager.ALiOssCallBack {
             override fun onResult(request: ListObjectsRequest?, result: ListObjectsResult) {
-//                val itemType = object : TypeToken<List<OssFileModel>>() {}.type
                 list.addAll(result.objectSummaries)
+                Log.d("gzb", "result.isTruncated: " + result.isTruncated);
 
                 if (result.isTruncated.not()){
                     isFinish.postValue(true)
                 }
-//                getSTSInfo(result.nextMarker)
-                nextMarker = result.nextMarker
+                if (result.nextMarker != null){
+                    nextMarker = result.nextMarker
+                }
                 stsModel.postValue(list)
             }
             override fun onFail(
