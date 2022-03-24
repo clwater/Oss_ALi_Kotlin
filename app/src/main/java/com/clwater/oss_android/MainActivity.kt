@@ -8,30 +8,35 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.GridCells
+import androidx.compose.foundation.lazy.LazyVerticalGrid
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.alibaba.sdk.android.oss.model.OSSObjectSummary
 import com.clwater.oss_android.manager.ALiOssManager
-import com.clwater.oss_android.model.OssFileModel
 import com.clwater.oss_android.ui.theme.Oss_AndroidTheme
 import com.clwater.oss_android.viewmodel.MainViewModel
-import com.google.gson.Gson
 
 
 class MainActivity : ComponentActivity() {
     lateinit var context: Context
-    private val mainViewModel:MainViewModel by viewModels()
+    var currentPath: String = ""
+    private val mainViewModel: MainViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,14 +48,14 @@ class MainActivity : ComponentActivity() {
 
     private fun initData() {
         ALiOssManager.init(this)
-        mainViewModel.stsModel.observe(this){
+        mainViewModel.stsModel.observe(this) {
             updateView(it)
         }
 //        mainViewModel.getSTSInfo()
 
     }
 
-    private fun updateView(list: List<OSSObjectSummary>){
+    private fun updateView(list: List<OSSObjectSummary>) {
         setContent(content = {
             Oss_AndroidTheme {
                 // A surface container using the 'background' color from the theme
@@ -70,49 +75,113 @@ class MainActivity : ComponentActivity() {
 
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
-    fun OssFile(list: List<OSSObjectSummary>){
+    fun OssFile(list: List<OSSObjectSummary>) {
         val isFinish = mainViewModel.isFinish.observeAsState(false)
-        var lastCharacter = ""
-        LazyColumn(modifier = Modifier.fillMaxHeight()){
-
+        LazyVerticalGrid(
+            cells = GridCells.Fixed(3)
+        ) {
             list.forEach { item ->
 
-                if(item.key.split("/")[0] != lastCharacter){
-                    stickyHeader {
-                        Box(modifier = Modifier.fillMaxWidth().background(Color.Green)){
-                            Text(text = item.key.split("/")[0])
+                item {
+
+                    Column(
+                        modifier = Modifier
+                            .padding(8.dp)
+                            .fillParentMaxWidth()
+                            .height(120.dp)
+                            .clip(RoundedCornerShape(8.dp, 8.dp, 0.dp, 0.dp))
+                            .background(Color(0xFFE9E9E9))
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.CenterHorizontally)
+                        ) {
+                            if (item.size != 0L) {
+                                if (Regex(".*?(?:png|jpg|jpeg)").matches(item.key)) {
+
+                                    val painter = rememberAsyncImagePainter(
+                                        ImageRequest.Builder(LocalContext.current)
+                                            .data(data = "https://" + Constants.BUCKET_NAME + ".oss-cn-beijing.aliyuncs.com/" + item.key)
+                                            .apply(block = fun ImageRequest.Builder.() {
+                                                crossfade(true)
+                                            }).build()
+                                    )
+
+                                    // 显示图片
+                                    Image(
+                                        painter = painter,
+                                        contentDescription = "",
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .height(100.dp)
+                                            .fillMaxWidth()
+                                            .align(Alignment.Center)
+                                            .clip(RoundedCornerShape(8.dp, 8.dp, 0.dp, 0.dp))
+                                    )
+
+                                    when (painter.state) {
+                                        is AsyncImagePainter.State.Loading -> {
+                                            // Display a circular progress indicator whilst loading
+                                            CircularProgressIndicator(
+                                                Modifier.align(
+                                                    Alignment.Center
+                                                )
+                                            )
+                                        }
+                                        is AsyncImagePainter.State.Error -> {
+                                            Text("Image Loading Error")
+                                        }
+                                    }
+                                } else {
+
+                                    Image(
+                                        painterResource(id = R.drawable.ic_twotone_insert_drive_file_64),
+                                        contentDescription = "R.drawable.ic_twotone_insert_drive_file_64",
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .height(100.dp)
+                                            .fillMaxWidth()
+                                            .align(Alignment.Center)
+                                            .clip(RoundedCornerShape(8.dp, 8.dp, 0.dp, 0.dp))
+                                    )
+                                }
+
+                            } else {
+                                Image(
+                                    painterResource(id = R.drawable.ic_twotone_folder_64),
+                                    contentDescription = "R.drawable.ic_twotone_folder_64",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .height(100.dp)
+                                        .fillMaxWidth()
+                                        .align(Alignment.Center)
+                                        .clip(RoundedCornerShape(8.dp, 8.dp, 0.dp, 0.dp))
+                                )
+                            }
+                        }
+                        Box(modifier = Modifier
+                            .height(20.dp)
+                            .fillMaxWidth()
+                            .background(Color(0xFFCECECE))
+                            .align(Alignment.CenterHorizontally)) {
+                            var fileName = item.key
+                            fileName = if (item.size != 0L) {
+                                fileName.split("/").last()
+                            } else {
+                                fileName.removeRange(
+                                    0,
+                                    fileName.indexOf(currentPath) + currentPath.length
+                                )
+                            }
+                            Text(
+                                modifier = Modifier.align(Alignment.Center).padding(start = 4.dp, end = 4.dp),
+                                text = fileName,
+                                maxLines = 1,
+                                fontSize = 12.sp
+                            )
                         }
                     }
                 }
-                lastCharacter = item.key.split("/")[0]
-
-                item {
-                    Text(text = item.key)
-                    Box() {
-                    if (item.size != 0L) {
-                        val painter = rememberAsyncImagePainter(
-                            ImageRequest.Builder(LocalContext.current)
-                                .data(data = "https://" + Constants.BUCKET_NAME + ".oss-cn-beijing.aliyuncs.com/" + item.key)
-                                .apply(block = fun ImageRequest.Builder.() {
-                                    crossfade(true)
-                                }).build()
-                        )
-                        Image(
-                            painter = painter,
-                            contentDescription = "",
-                            Modifier.size(100.dp, 100.dp)
-                        )
-                        when (painter.state) {
-                            is AsyncImagePainter.State.Loading -> {
-                                // Display a circular progress indicator whilst loading
-                                CircularProgressIndicator(Modifier.align(Alignment.Center))
-                            }
-                            is AsyncImagePainter.State.Error -> {
-                                Text("Image Loading Error")
-                            }
-                        }
-                    }
-                } }
             }
             if (isFinish.value.not()) {
                 item {
@@ -123,22 +192,22 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-
     }
+
     @Composable
     fun Greeting(title: String, list: List<OSSObjectSummary>) {
-//        val list by mainViewModel.stsModel.observeAsState(listOf())
-//        val painter = rememberCoilPainter("")
         Column() {
             TopAppBar(title = { Text(text = title) })
             val scrollState = rememberScrollState()
-            Row(modifier = Modifier.horizontalScroll(scrollState) ) {
-                for ( i in 1..10){
-                    Text(text = "" + i,
+            Row(modifier = Modifier.horizontalScroll(scrollState)) {
+                for (i in 1..10) {
+                    Text(
+                        text = "" + i,
                         modifier = Modifier
                             .padding(12.dp)
                             .size(100.dp)
-                            .background(Color.Blue))
+                            .background(Color.Blue)
+                    )
                 }
             }
             OssFile(list)

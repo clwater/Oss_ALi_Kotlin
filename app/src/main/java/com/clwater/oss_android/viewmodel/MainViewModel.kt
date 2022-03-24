@@ -35,7 +35,6 @@ class MainViewModel : ViewModel() {
         val callback = object : ALiOssManager.ALiOssCallBack {
             override fun onResult(request: ListObjectsRequest?, result: ListObjectsResult) {
                 list.addAll(result.objectSummaries)
-                Log.d("gzb", "result.isTruncated: " + result.isTruncated);
 
                 if (result.isTruncated.not()){
                     isFinish.postValue(true)
