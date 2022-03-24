@@ -78,7 +78,9 @@ class MainActivity : ComponentActivity() {
     fun OssFile(list: List<OSSObjectSummary>) {
         val isFinish = mainViewModel.isFinish.observeAsState(false)
         LazyVerticalGrid(
-            cells = GridCells.Fixed(3)
+            cells = GridCells.Fixed(3),
+            modifier = Modifier
+                .fillMaxWidth()
         ) {
             list.forEach { item ->
 
@@ -174,7 +176,9 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             Text(
-                                modifier = Modifier.align(Alignment.Center).padding(start = 4.dp, end = 4.dp),
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .padding(start = 4.dp, end = 4.dp),
                                 text = fileName,
                                 maxLines = 1,
                                 fontSize = 12.sp
@@ -184,8 +188,32 @@ class MainActivity : ComponentActivity() {
                 }
             }
             if (isFinish.value.not()) {
-                item {
-                    CircularProgressIndicator(color = Color.Red)
+
+                val offset =
+                    when(list.size % 3){
+                        0 -> {
+                            1
+                        }
+                        1 -> {
+                            3
+                        }
+                        2 -> {
+                            2
+                        }
+                        else -> {
+                            0
+                        }
+                    }
+
+                for (i in 1..offset){
+                    item{
+                        Text(text = "")
+                    }
+                }
+                item() {
+                    Box(modifier = Modifier.fillMaxWidth()){
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    }
                     LaunchedEffect(Unit) {
                         mainViewModel.getSTSInfoNext()
                     }
