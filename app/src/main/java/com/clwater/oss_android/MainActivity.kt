@@ -2,18 +2,15 @@ package com.clwater.oss_android
 
 import android.content.Context
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.GridCells
 import androidx.compose.foundation.lazy.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.SnackbarDefaults.backgroundColor
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
@@ -22,7 +19,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -35,7 +31,6 @@ import com.alibaba.sdk.android.oss.model.OSSObjectSummary
 import com.clwater.oss_android.manager.ALiOssManager
 import com.clwater.oss_android.ui.theme.Oss_AndroidTheme
 import com.clwater.oss_android.viewmodel.MainViewModel
-import kotlin.math.log
 
 
 class MainActivity : ComponentActivity() {
@@ -44,6 +39,8 @@ class MainActivity : ComponentActivity() {
     private val mainViewModel: MainViewModel by viewModels()
     val showImageUrl = mutableStateOf("")
     val showDownloadImageUrl = mutableStateOf("")
+    val downloadProgress = mutableStateOf(0f)
+    val inProgress = mutableStateOf(false)
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -298,7 +295,25 @@ class MainActivity : ComponentActivity() {
                 confirmButton = {
 
                     Button(
-                        onClick = { showDownloadImageUrl.value = showImageUrl.value },
+                        onClick = {
+                            inProgress.value = true
+                            showDownloadImageUrl.value = showImageUrl.value
+                            val callback = object : ALiOssManager.DownloadCallBack {
+                                override fun onProgress(progress: Float) {
+                                    downloadProgress.value = progress
+                                    inProgress.value = downloadProgress.value != 1f
+                                }
+
+                                override fun onFail() {
+                                    inProgress.value = false
+                                }
+                            }
+                            val name = showDownloadImageUrl.value.replace(
+                                "https://" + Constants.BUCKET_NAME + ".oss-cn-beijing.aliyuncs.com/",
+                                ""
+                            )
+                            mainViewModel.download(name, callback)
+                        },
                         colors = ButtonDefaults.buttonColors(backgroundColor = Color.Yellow)
                     ) {
                         Text(text = "下载")
@@ -314,10 +329,14 @@ class MainActivity : ComponentActivity() {
                 )
         }
     }
-    
+
     @Composable
-    private fun ShowDownloadDialog(){
+    private fun ShowDownloadDialog() {
         if (showDownloadImageUrl.value.isNotEmpty()) {
+            val name = showDownloadImageUrl.value.replace(
+                "https://" + Constants.BUCKET_NAME + ".oss-cn-beijing.aliyuncs.com/",
+                ""
+            )
             AlertDialog(
                 modifier = Modifier
                     .wrapContentWidth()
@@ -325,20 +344,29 @@ class MainActivity : ComponentActivity() {
                 onDismissRequest = {
                     showDownloadImageUrl.value = ""
                 },
-                properties = DialogProperties(dismissOnClickOutside = true),
-                text = {
+                properties = DialogProperties(dismissOnClickOutside = !inProgress.value),
+                title = {
                     Box(modifier = Modifier) {
-                        Text(text = "13")
+                        Text(text = "$name 下载中")
                     }
+                },
+                text = {
+                    LinearProgressIndicator(progress = downloadProgress.value)
                 },
 
                 confirmButton = {
-
                     Button(
-                        onClick = { showImageUrl.value = "" },
-                        colors = ButtonDefaults.buttonColors(backgroundColor = Color.Yellow)
+                        onClick = { showDownloadImageUrl.value = "" },
+                        modifier = Modifier.clickable { !inProgress.value }
+
                     ) {
-                        Text(text = "下载")
+                        Text(
+                            text = (if (inProgress.value) {
+                                "下载中"
+                            } else {
+                                "下载完成"
+                            })
+                        )
                     }
 
                 },

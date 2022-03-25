@@ -1,20 +1,24 @@
 package com.clwater.oss_android.manager
 
 import android.content.Context
+import android.os.Environment
 import android.util.Log
 import com.alibaba.sdk.android.oss.ClientException
 import com.alibaba.sdk.android.oss.OSS
 import com.alibaba.sdk.android.oss.OSSClient
 import com.alibaba.sdk.android.oss.ServiceException
 import com.alibaba.sdk.android.oss.callback.OSSCompletedCallback
+import com.alibaba.sdk.android.oss.common.OSSLog
 import com.alibaba.sdk.android.oss.common.auth.OSSAuthCredentialsProvider
-import com.alibaba.sdk.android.oss.common.auth.OSSCredentialProvider
-import com.alibaba.sdk.android.oss.common.auth.OSSStsTokenCredentialProvider
-import com.alibaba.sdk.android.oss.internal.OSSAsyncTask
+import com.alibaba.sdk.android.oss.model.GetObjectRequest
+import com.alibaba.sdk.android.oss.model.GetObjectResult
 import com.alibaba.sdk.android.oss.model.ListObjectsRequest
 import com.alibaba.sdk.android.oss.model.ListObjectsResult
 import com.clwater.oss_android.Constants
+import com.clwater.oss_android.R
 import com.google.gson.Gson
+import java.io.File
+import java.io.FileOutputStream
 
 
 /**
@@ -24,13 +28,23 @@ import com.google.gson.Gson
 object ALiOssManager {
 //    private var marker: String? = null
     private var isCompleted = false
+    var path : String = ""
 
     private lateinit var oss: OSS
     fun init(context: Context){
+//        path = context.filesDir.absolutePath
+        path = Environment.getExternalStorageDirectory().absolutePath + "/" + context.resources.getString(R.string.app_name)
+        checkFile()
         val credentialProvider = OSSAuthCredentialsProvider(Constants.STS_SERVER_URL)
         oss = OSSClient(context, Constants.endpoint, credentialProvider)
     }
 
+    fun checkFile(){
+        val file = File(path)
+        if (!file.exists()){
+            file.mkdir()
+        }
+    }
 
     // 列举一页文件。
     fun getObjectList(callback: ALiOssCallBack, marker: String) {
@@ -75,6 +89,57 @@ object ALiOssManager {
                 }
             })
 
+    }
+
+    fun download(url: String, downloadCallBack: DownloadCallBack){
+        Log.d("gzb2", "download")
+        val get = GetObjectRequest(Constants.BUCKET_NAME, url)
+        get.setProgressListener { request, currentSize, totalSize ->
+            downloadCallBack.onProgress(currentSize /1f / totalSize)
+            Log.d("gzb", "$currentSize  / $totalSize     " + (currentSize /1f / totalSize))
+            Log.d("gzb1", "" + (currentSize /1f / totalSize))
+        }
+        oss.asyncGetObject(get, object : OSSCompletedCallback<GetObjectRequest?, GetObjectResult> {
+            override fun onSuccess(request: GetObjectRequest?, result: GetObjectResult) {
+                val length = result.contentLength
+                if (length > 0) {
+                    val buffer = ByteArray(length.toInt())
+                    var readCount = 0
+                    while (readCount < length) {
+                        try {
+                            readCount += result.objectContent.read(
+                                buffer,
+                                readCount,
+                                length.toInt() - readCount
+                            )
+                        } catch (e: Exception) {
+                            OSSLog.logInfo(e.toString())
+                        }
+                    }
+                    try {
+                        val fileName = path + "/" + url.split("/").last()
+                        val fout = FileOutputStream(fileName)
+                        fout.write(buffer)
+                        fout.close()
+//                        downloadCallBack.onProgress(1f)
+                    } catch (e: Exception) {
+                        OSSLog.logInfo(e.toString())
+                    }
+                }
+            }
+
+            override fun onFailure(
+                request: GetObjectRequest?, clientException: ClientException,
+                serviceException: ServiceException
+            ) {
+                downloadCallBack.onFail()
+            }
+        })
+    }
+
+    interface DownloadCallBack{
+        fun onProgress(progress: Float)
+        fun onFail()
     }
 
     interface ALiOssCallBack{

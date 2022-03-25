@@ -55,5 +55,9 @@ class MainViewModel : ViewModel() {
         ALiOssManager.getObjectList(callback, marker)
     }
 
+    fun download(url: String, downloadCallBack: ALiOssManager.DownloadCallBack){
+        ALiOssManager.download(url, downloadCallBack)
+    }
+
 
 }
