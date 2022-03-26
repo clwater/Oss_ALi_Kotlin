@@ -1,5 +1,6 @@
 package com.clwater.oss_android
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
@@ -10,6 +11,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.GridCells
 import androidx.compose.foundation.lazy.LazyVerticalGrid
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -34,12 +36,12 @@ import com.clwater.oss_android.manager.ALiOssManager
 import com.clwater.oss_android.ui.theme.Oss_AndroidTheme
 import com.clwater.oss_android.viewmodel.MainViewModel
 import com.google.gson.Gson
+import kotlinx.coroutines.launch
 
 
 class MainActivity : ComponentActivity() {
     lateinit var context: Context
-    var currentPath =  mutableStateOf("")
-//    var currentPath =  mutableStateOf("")
+    var currentPath = mutableStateOf("")
     private val mainViewModel: MainViewModel by viewModels()
     val showImageUrl = mutableStateOf("")
     val showDownloadImageUrl = mutableStateOf("")
@@ -87,7 +89,7 @@ class MainActivity : ComponentActivity() {
 
     @Preview
     @Composable
-    fun preview(){
+    fun preview() {
         updateView(listOf())
     }
 
@@ -176,13 +178,13 @@ class MainActivity : ComponentActivity() {
 
                             } else {
                                 Box(modifier = Modifier.clickable {
-                                    if ( currentPath.value != item.key) {
+                                    if (currentPath.value != item.key) {
                                         currentPath.value = item.key
                                         mainViewModel.getSTSInfo(currentPath.value)
 //                                    mainViewModel.stsModel.value = listOf()
                                         inProgress.value = false
                                     }
-                                }){
+                                }) {
                                     Image(
                                         painterResource(id = R.drawable.ic_twotone_folder_64),
                                         contentDescription = "R.drawable.ic_twotone_folder_64",
@@ -207,16 +209,18 @@ class MainActivity : ComponentActivity() {
                             fileName = if (item.size != 0L) {
                                 fileName.split("/").last()
                             } else {
-                                if (fileName.split("/").size >= 2 && fileName.split("/").isNotEmpty()) {
+                                if (fileName.split("/").size >= 2 && fileName.split("/")
+                                        .isNotEmpty()
+                                ) {
                                     fileName.removeRange(
                                         0,
                                         fileName.indexOf(currentPath.value) + currentPath.value.length
                                     )
-                                }else{
+                                } else {
                                     fileName
                                 }
                             }
-                            if (fileName.isEmpty()){
+                            if (fileName.isEmpty()) {
                                 fileName = "/"
                             }
 
@@ -228,7 +232,7 @@ class MainActivity : ComponentActivity() {
                                 maxLines = 1,
                                 fontSize = 12.sp,
 
-                            )
+                                )
                         }
                     }
                 }
@@ -273,17 +277,38 @@ class MainActivity : ComponentActivity() {
         Column() {
             TopAppBar(title = { Text(text = title) })
             val scrollState = rememberScrollState()
+
+            val paths = currentPath.value.split("/").toMutableList()
+            paths.add(0, "")
+            if (paths.size > 1 && paths.last().isEmpty()) {
+                paths.removeLast()
+            }
             Row(modifier = Modifier.horizontalScroll(scrollState)) {
-                for (i in 1..10) {
-                    Text(
-                        text = "" + i,
-                        modifier = Modifier
-                            .padding(12.dp)
-                            .size(100.dp)
-                            .background(Color.Blue)
-                    )
+                paths.forEach {
+                    Box(modifier = Modifier.clickable {
+                        var aliPath = ""
+                        for (item in 0..paths.indexOf(it)) {
+                            aliPath += paths[item] + "/"
+                        }
+                        aliPath = aliPath.removePrefix("/")
+                        if (currentPath.value != aliPath) {
+                            currentPath.value = aliPath
+                            mainViewModel.getSTSInfo(currentPath.value)
+                            inProgress.value = false
+                        }
+                    }) {
+                        Text(
+                            text = "$it/",
+                            modifier = Modifier
+                                .padding(4.dp)
+                                .background(Color(0xFFD8D8D8))
+                                .padding(4.dp),
+                            color = Color(0xFF3C3C3C)
+                        )
+                    }
                 }
             }
+
             OssFile(list)
             ShowImageDialog()
             ShowDownloadDialog()
