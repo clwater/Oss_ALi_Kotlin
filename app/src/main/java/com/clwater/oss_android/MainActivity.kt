@@ -2,6 +2,7 @@ package com.clwater.oss_android
 
 import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -21,6 +22,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
@@ -31,11 +33,13 @@ import com.alibaba.sdk.android.oss.model.OSSObjectSummary
 import com.clwater.oss_android.manager.ALiOssManager
 import com.clwater.oss_android.ui.theme.Oss_AndroidTheme
 import com.clwater.oss_android.viewmodel.MainViewModel
+import com.google.gson.Gson
 
 
 class MainActivity : ComponentActivity() {
     lateinit var context: Context
-    var currentPath: String = ""
+    var currentPath =  mutableStateOf("")
+//    var currentPath =  mutableStateOf("")
     private val mainViewModel: MainViewModel by viewModels()
     val showImageUrl = mutableStateOf("")
     val showDownloadImageUrl = mutableStateOf("")
@@ -55,6 +59,7 @@ class MainActivity : ComponentActivity() {
     private fun initData() {
         ALiOssManager.init(this)
         mainViewModel.stsModel.observe(this) {
+            Log.d("gzb", "" + Gson().toJson(it))
             updateView(it)
         }
 //        mainViewModel.getSTSInfo()
@@ -76,6 +81,13 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun initView() {
+        updateView(listOf())
+    }
+
+
+    @Preview
+    @Composable
+    fun preview(){
         updateView(listOf())
     }
 
@@ -163,16 +175,25 @@ class MainActivity : ComponentActivity() {
                                 }
 
                             } else {
-                                Image(
-                                    painterResource(id = R.drawable.ic_twotone_folder_64),
-                                    contentDescription = "R.drawable.ic_twotone_folder_64",
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .height(100.dp)
-                                        .fillMaxWidth()
-                                        .align(Alignment.Center)
-                                        .clip(RoundedCornerShape(8.dp, 8.dp, 0.dp, 0.dp))
-                                )
+                                Box(modifier = Modifier.clickable {
+                                    if ( currentPath.value != item.key) {
+                                        currentPath.value = item.key
+                                        mainViewModel.getSTSInfo(currentPath.value)
+//                                    mainViewModel.stsModel.value = listOf()
+                                        inProgress.value = false
+                                    }
+                                }){
+                                    Image(
+                                        painterResource(id = R.drawable.ic_twotone_folder_64),
+                                        contentDescription = "R.drawable.ic_twotone_folder_64",
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .height(100.dp)
+                                            .fillMaxWidth()
+                                            .align(Alignment.Center)
+                                            .clip(RoundedCornerShape(8.dp, 8.dp, 0.dp, 0.dp))
+                                    )
+                                }
                             }
                         }
                         Box(
@@ -186,18 +207,27 @@ class MainActivity : ComponentActivity() {
                             fileName = if (item.size != 0L) {
                                 fileName.split("/").last()
                             } else {
-                                fileName.removeRange(
-                                    0,
-                                    fileName.indexOf(currentPath) + currentPath.length
-                                )
+                                if (fileName.split("/").size >= 2 && fileName.split("/").isNotEmpty()) {
+                                    fileName.removeRange(
+                                        0,
+                                        fileName.indexOf(currentPath.value) + currentPath.value.length
+                                    )
+                                }else{
+                                    fileName
+                                }
                             }
+                            if (fileName.isEmpty()){
+                                fileName = "/"
+                            }
+
                             Text(
                                 modifier = Modifier
                                     .align(Alignment.Center)
                                     .padding(start = 4.dp, end = 4.dp),
                                 text = fileName,
                                 maxLines = 1,
-                                fontSize = 12.sp
+                                fontSize = 12.sp,
+
                             )
                         }
                     }
@@ -231,7 +261,7 @@ class MainActivity : ComponentActivity() {
                         CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                     }
                     LaunchedEffect(Unit) {
-                        mainViewModel.getSTSInfoNext()
+                        mainViewModel.getSTSInfoNext(currentPath.value)
                     }
                 }
             }

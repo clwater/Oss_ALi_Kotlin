@@ -22,16 +22,18 @@ class MainViewModel : ViewModel() {
     var list: MutableList<OSSObjectSummary> = ArrayList()
 
     var nextMarker = ""
-    fun getSTSInfo(){
+    fun getSTSInfo(prefix: String){
         nextMarker = ""
-        getSTSInfo(nextMarker)
+        list.clear()
+        stsModel.postValue(listOf())
+        isFinish.value = false
     }
 
-    fun getSTSInfoNext(){
-        getSTSInfo(nextMarker)
+    fun getSTSInfoNext(prefix: String){
+        getSTSInfo(nextMarker, prefix)
     }
 
-    fun getSTSInfo(marker: String){
+    fun getSTSInfo(marker: String, prefix: String){
         val callback = object : ALiOssManager.ALiOssCallBack {
             override fun onResult(request: ListObjectsRequest?, result: ListObjectsResult) {
                 list.addAll(result.objectSummaries)
@@ -52,7 +54,7 @@ class MainViewModel : ViewModel() {
                 errorCode.postValue("fail")
             }
         }
-        ALiOssManager.getObjectList(callback, marker)
+        ALiOssManager.getObjectList(callback, marker, prefix)
     }
 
     fun download(url: String, downloadCallBack: ALiOssManager.DownloadCallBack){

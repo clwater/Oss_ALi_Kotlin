@@ -47,13 +47,15 @@ object ALiOssManager {
     }
 
     // 列举一页文件。
-    fun getObjectList(callback: ALiOssCallBack, marker: String) {
-        Log.d("gzb", "marker: $marker");
+    fun getObjectList(callback: ALiOssCallBack, marker: String, prefix: String) {
+        if (marker.isEmpty()){
+            isCompleted = false
+        }
         val request = ListObjectsRequest(Constants.BUCKET_NAME)
         // 填写每页返回文件的最大个数。如果不设置此参数，则默认值为100，maxkeys的取值不能大于1000。
         request.maxKeys = 100
         request.marker = marker
-//        request.prefix = "image_library_clwater"
+        request.prefix = prefix
         oss.asyncListObjects(
             request,
             object : OSSCompletedCallback<ListObjectsRequest?, ListObjectsResult> {
@@ -81,10 +83,6 @@ object ALiOssManager {
                     }
                     if (serviceException != null) {
                         // 服务端异常。
-                        Log.e("gzb", serviceException.errorCode)
-                        Log.e("gzb", serviceException.requestId)
-                        Log.e("gzb", serviceException.hostId)
-                        Log.e("gzb", serviceException.rawMessage)
                     }
                 }
             })
@@ -92,12 +90,9 @@ object ALiOssManager {
     }
 
     fun download(url: String, downloadCallBack: DownloadCallBack){
-        Log.d("gzb2", "download")
         val get = GetObjectRequest(Constants.BUCKET_NAME, url)
         get.setProgressListener { request, currentSize, totalSize ->
             downloadCallBack.onProgress(currentSize /1f / totalSize)
-            Log.d("gzb", "$currentSize  / $totalSize     " + (currentSize /1f / totalSize))
-            Log.d("gzb1", "" + (currentSize /1f / totalSize))
         }
         oss.asyncGetObject(get, object : OSSCompletedCallback<GetObjectRequest?, GetObjectResult> {
             override fun onSuccess(request: GetObjectRequest?, result: GetObjectResult) {
