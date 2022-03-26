@@ -1,5 +1,6 @@
 package com.clwater.oss_android.viewmodel
 
+import android.content.Intent
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -33,7 +34,7 @@ class MainViewModel : ViewModel() {
         getSTSInfo(nextMarker, prefix)
     }
 
-    fun getSTSInfo(marker: String, prefix: String){
+    private fun getSTSInfo(marker: String, prefix: String){
         val callback = object : ALiOssManager.ALiOssCallBack {
             override fun onResult(request: ListObjectsRequest?, result: ListObjectsResult) {
                 list.addAll(result.objectSummaries)
@@ -60,6 +61,8 @@ class MainViewModel : ViewModel() {
     fun download(url: String, downloadCallBack: ALiOssManager.DownloadCallBack){
         ALiOssManager.download(url, downloadCallBack)
     }
+
+
 
 
 }

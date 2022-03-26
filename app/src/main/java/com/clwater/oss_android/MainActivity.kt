@@ -1,11 +1,15 @@
 package com.clwater.oss_android
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -43,8 +47,9 @@ class MainActivity : ComponentActivity() {
     lateinit var context: Context
     var currentPath = mutableStateOf("")
     private val mainViewModel: MainViewModel by viewModels()
-    val showImageUrl = mutableStateOf("")
-    val showDownloadImageUrl = mutableStateOf("")
+    private val showImageUrl = mutableStateOf("")
+    private val showDownloadImageUrl = mutableStateOf("")
+    val showUpload = mutableStateOf(false)
     val downloadProgress = mutableStateOf(0f)
     val inProgress = mutableStateOf(false)
 
@@ -309,9 +314,78 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            OssFile(list)
+            Box(modifier = Modifier.weight(1f)){
+                OssFile(list)
+            }
+                Button(
+                    modifier = Modifier.padding(12.dp),
+                    onClick = { showUpload.value = true }) {
+                    Text(text = "上传图片")
+                }
+
             ShowImageDialog()
             ShowDownloadDialog()
+            ShowUpLoadDialog()
+
+
+
+        }
+    }
+
+
+    fun chooseLocalImage(){
+        val intent = Intent()
+        intent.action = Intent.ACTION_GET_CONTENT
+        intent.type = "image/*"
+//        registerForActivityResult(intent, 111)
+//        val startForResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
+//            if (result.resultCode == Activity.RESULT_OK) {
+//                val intent = result.data
+//
+//                // Handle the Intent
+//                Log.d("gzb", "$intent")
+//            }
+//        }
+
+//        startForResult.launch(Intent(this, MainActivity::class.java))
+
+
+    }
+
+    @Composable
+    fun ShowUpLoadDialog() {
+        if (showUpload.value) {
+            AlertDialog(
+                modifier = Modifier
+                    .wrapContentWidth()
+                    .wrapContentHeight(),
+                onDismissRequest = {
+                    showUpload.value = false
+                },
+//                properties = DialogProperties(dismissOnClickOutside = !inProgress.value),
+                title = {
+                    Box(modifier = Modifier) {
+                        Text(text = "上传文件")
+                    }
+                },
+                text = {
+                       Button(onClick = {
+                            chooseLocalImage()
+                       }) {
+                           Text(text = "选择文件")
+                       }
+//                    LinearProgressIndicator(progress = downloadProgress.value)
+                },
+
+                confirmButton = {
+                    Button(onClick = { /*TODO*/ }) {
+                        Text(text = "上传")
+                    }
+
+                },
+
+
+                )
         }
     }
 
