@@ -338,11 +338,26 @@ class MainActivity : ComponentActivity() {
             Box(modifier = Modifier.weight(1f)) {
                 OssFile(list)
             }
-            Button(
-                modifier = Modifier.padding(12.dp),
-                onClick = { uploadStatus.value = 1 }) {
-                Text(text = "上传图片")
+
+            Row() {
+                Button(
+                    modifier = Modifier.padding(12.dp),
+                    onClick = { uploadStatus.value = 1 }) {
+                    Text(text = "上传图片")
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
+                Button(
+                    modifier = Modifier.padding(12.dp),
+                    onClick = {
+                        mainViewModel.getSTSInfo(currentPath.value)
+                        inProgress.value = false
+                    }) {
+                    
+                    Image(painter = painterResource(id = R.drawable.ic_baseline_refresh_24), contentDescription = "")
+                }
             }
+
 
             ShowImageDialog()
             ShowDownloadDialog()
