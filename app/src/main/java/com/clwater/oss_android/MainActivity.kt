@@ -439,15 +439,17 @@ class MainActivity : ComponentActivity() {
                        }else{
                            Column() {
                                Box() {
-                                   Image(
-                                       bitmap = uploadImageBitmap!!, contentDescription = "",
-                                       modifier = Modifier
-                                           .fillMaxWidth()
-                                           .align(Alignment.Center)
-                                           .clip(
-                                               RoundedCornerShape(8.dp, 8.dp, 0.dp, 0.dp)
-                                           )
-                                   )
+                                   if (uploadImageBitmap != null) {
+                                       Image(
+                                           bitmap = uploadImageBitmap!!, contentDescription = "",
+                                           modifier = Modifier
+                                               .fillMaxWidth()
+                                               .align(Alignment.Center)
+                                               .clip(
+                                                   RoundedCornerShape(8.dp, 8.dp, 0.dp, 0.dp)
+                                               )
+                                       )
+                                   }
                                }
                                if (uploadStatus.value == 3 || uploadStatus.value == 4){
                                    LinearProgressIndicator(modifier = Modifier.padding(top = 12.dp), progress = uploadrogress.value)
@@ -487,6 +489,15 @@ class MainActivity : ComponentActivity() {
                             Text(text = "完成")
                         }
                     }
+                },
+                dismissButton = {
+                    Button(onClick = {                
+                        if (uploadStatus.value == 1 || uploadStatus.value == 2){
+                        uploadStatus.value = 0
+                    }}) {
+                        Text(text = "取消")
+                    }
+
                 }
             )
         }
