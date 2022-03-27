@@ -1,21 +1,17 @@
 package com.clwater.oss_android
 
-import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.result.ActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.GridCells
 import androidx.compose.foundation.lazy.LazyVerticalGrid
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -24,6 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -40,19 +38,21 @@ import com.clwater.oss_android.manager.ALiOssManager
 import com.clwater.oss_android.ui.theme.Oss_AndroidTheme
 import com.clwater.oss_android.viewmodel.MainViewModel
 import com.google.gson.Gson
-import kotlinx.coroutines.launch
+import java.io.InputStream
 
 
 class MainActivity : ComponentActivity() {
-    lateinit var context: Context
-    var currentPath = mutableStateOf("")
+    private lateinit var context: Context
+    private var currentPath = mutableStateOf("")
     private val mainViewModel: MainViewModel by viewModels()
     private val showImageUrl = mutableStateOf("")
     private val showDownloadImageUrl = mutableStateOf("")
-    val showUpload = mutableStateOf(false)
+    private val showUpload = mutableStateOf(false)
     val downloadProgress = mutableStateOf(0f)
     val inProgress = mutableStateOf(false)
-
+    private val CHOOSE_IMAGE_CODE = 1
+    private val bufferedImage: ImageBitmap? = null
+    private val camera1bufferedImage = mutableStateOf(bufferedImage)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -337,19 +337,18 @@ class MainActivity : ComponentActivity() {
         val intent = Intent()
         intent.action = Intent.ACTION_GET_CONTENT
         intent.type = "image/*"
-//        registerForActivityResult(intent, 111)
-//        val startForResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
-//            if (result.resultCode == Activity.RESULT_OK) {
-//                val intent = result.data
-//
-//                // Handle the Intent
-//                Log.d("gzb", "$intent")
-//            }
-//        }
+        startActivityForResult(intent, CHOOSE_IMAGE_CODE)
+    }
 
-//        startForResult.launch(Intent(this, MainActivity::class.java))
-
-
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == CHOOSE_IMAGE_CODE){
+            val uri = data?.data ?: return
+            var imageInputStream: InputStream? = null
+            imageInputStream = contentResolver.openInputStream(uri)
+            // 把输入流解析为 Bitmap
+            camera1bufferedImage.value = BitmapFactory.decodeStream(imageInputStream).asImageBitmap()
+        }
     }
 
     @Composable
@@ -357,24 +356,36 @@ class MainActivity : ComponentActivity() {
         if (showUpload.value) {
             AlertDialog(
                 modifier = Modifier
+                    .padding(12.dp)
                     .wrapContentWidth()
                     .wrapContentHeight(),
                 onDismissRequest = {
                     showUpload.value = false
                 },
 //                properties = DialogProperties(dismissOnClickOutside = !inProgress.value),
-                title = {
-                    Box(modifier = Modifier) {
-                        Text(text = "上传文件")
-                    }
-                },
+                title = {},
                 text = {
-                       Button(onClick = {
+                    if (camera1bufferedImage.value == null) {
+                        Button(onClick = {
                             chooseLocalImage()
-                       }) {
-                           Text(text = "选择文件")
-                       }
-//                    LinearProgressIndicator(progress = downloadProgress.value)
+                        }) {
+                            Text(text = "选择文件", )
+                        }
+                    }
+
+                    Box(){
+
+                        camera1bufferedImage.value?.let {
+                            Image(bitmap = it, contentDescription = "",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .align(Alignment.Center)
+                                    .clip(
+                                        RoundedCornerShape(8.dp, 8.dp, 0.dp, 0.dp)
+                                    ))
+                        }
+                    }
+
                 },
 
                 confirmButton = {
