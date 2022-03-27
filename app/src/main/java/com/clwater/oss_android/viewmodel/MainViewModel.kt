@@ -1,19 +1,13 @@
 package com.clwater.oss_android.viewmodel
 
-import android.content.Intent
-import android.util.Log
+import android.net.Uri
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.alibaba.sdk.android.oss.ClientException
 import com.alibaba.sdk.android.oss.ServiceException
-import com.alibaba.sdk.android.oss.model.ListObjectsRequest
-import com.alibaba.sdk.android.oss.model.ListObjectsResult
-import com.alibaba.sdk.android.oss.model.OSSObjectSummary
+import com.alibaba.sdk.android.oss.model.*
 import com.clwater.oss_android.manager.ALiOssManager
-import com.clwater.oss_android.model.OssFileModel
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
-import kotlin.math.log
+
 
 class MainViewModel : ViewModel() {
     var stsModel: MutableLiveData<List<OSSObjectSummary>> = MutableLiveData<List<OSSObjectSummary>>()
@@ -32,6 +26,10 @@ class MainViewModel : ViewModel() {
 
     fun getSTSInfoNext(prefix: String){
         getSTSInfo(nextMarker, prefix)
+    }
+
+    fun upload(uploadPath: Uri, path: String, name: String, callback: ALiOssManager.UploadCallBack){
+        ALiOssManager.upload(uploadPath, path, name, callback)
     }
 
     private fun getSTSInfo(marker: String, prefix: String){

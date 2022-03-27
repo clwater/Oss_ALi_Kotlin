@@ -1,6 +1,7 @@
 package com.clwater.oss_android.manager
 
 import android.content.Context
+import android.net.Uri
 import android.os.Environment
 import android.util.Log
 import com.alibaba.sdk.android.oss.ClientException
@@ -8,12 +9,10 @@ import com.alibaba.sdk.android.oss.OSS
 import com.alibaba.sdk.android.oss.OSSClient
 import com.alibaba.sdk.android.oss.ServiceException
 import com.alibaba.sdk.android.oss.callback.OSSCompletedCallback
+import com.alibaba.sdk.android.oss.callback.OSSProgressCallback
 import com.alibaba.sdk.android.oss.common.OSSLog
 import com.alibaba.sdk.android.oss.common.auth.OSSAuthCredentialsProvider
-import com.alibaba.sdk.android.oss.model.GetObjectRequest
-import com.alibaba.sdk.android.oss.model.GetObjectResult
-import com.alibaba.sdk.android.oss.model.ListObjectsRequest
-import com.alibaba.sdk.android.oss.model.ListObjectsResult
+import com.alibaba.sdk.android.oss.model.*
 import com.clwater.oss_android.Constants
 import com.clwater.oss_android.R
 import com.google.gson.Gson
@@ -43,6 +42,30 @@ object ALiOssManager {
         val file = File(path)
         if (!file.exists()){
             file.mkdir()
+        }
+    }
+
+    fun upload(uri: Uri, path: String, name: String, callback: UploadCallBack){
+//        Log.d("gzb", Gson().toJson(uri))
+        val put = PutObjectRequest(
+            Constants.BUCKET_NAME,
+            (path + name),
+            uri
+        )
+
+        put.progressCallback =
+            OSSProgressCallback { request, currentSize, totalSize ->
+                callback.onProgress(((currentSize / totalSize).toFloat()))
+            }
+
+        try {
+            val putResult: PutObjectResult = oss.putObject(put)
+            callback.onProgress(1f)
+        } catch (e: ClientException) {
+            callback.onFail()
+            e.printStackTrace()
+        } catch (e: ServiceException) {
+            callback.onFail()
         }
     }
 
@@ -133,6 +156,11 @@ object ALiOssManager {
     }
 
     interface DownloadCallBack{
+        fun onProgress(progress: Float)
+        fun onFail()
+    }
+
+    interface UploadCallBack{
         fun onProgress(progress: Float)
         fun onFail()
     }

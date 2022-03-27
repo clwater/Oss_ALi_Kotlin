@@ -1,10 +1,15 @@
 package com.clwater.oss_android
 
+import android.annotation.SuppressLint
+import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Bundle
+import android.provider.OpenableColumns
 import android.util.Log
+import android.webkit.MimeTypeMap
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -30,6 +35,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.net.toFile
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
@@ -47,12 +53,27 @@ class MainActivity : ComponentActivity() {
     private val mainViewModel: MainViewModel by viewModels()
     private val showImageUrl = mutableStateOf("")
     private val showDownloadImageUrl = mutableStateOf("")
-    private val showUpload = mutableStateOf(false)
+
+    //    private val showUpload = mutableStateOf(false)
     val downloadProgress = mutableStateOf(0f)
     val inProgress = mutableStateOf(false)
     private val CHOOSE_IMAGE_CODE = 1
-    private val bufferedImage: ImageBitmap? = null
-    private val camera1bufferedImage = mutableStateOf(bufferedImage)
+
+    private val uploadPath = mutableStateOf("")
+
+
+//    private val bufferedImage: ImageBitmap? = null
+    private var camera1bufferedImage: ImageBitmap? = null
+
+//    private val _uri: ? = null
+    private var uploadUri : Uri = Uri.EMPTY
+
+    //上传进度
+    val uploadrogress = mutableStateOf(0f)
+
+    //上传Dialog状态
+    // 0: 关闭 1: 未选择图片 2: 选择图片完成 3: 图片上传中 4: 图片上传完成
+    val uploadStatus = mutableStateOf(0)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -314,89 +335,141 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            Box(modifier = Modifier.weight(1f)){
+            Box(modifier = Modifier.weight(1f)) {
                 OssFile(list)
             }
-                Button(
-                    modifier = Modifier.padding(12.dp),
-                    onClick = { showUpload.value = true }) {
-                    Text(text = "上传图片")
-                }
+            Button(
+                modifier = Modifier.padding(12.dp),
+                onClick = { uploadStatus.value = 1 }) {
+                Text(text = "上传图片")
+            }
 
             ShowImageDialog()
             ShowDownloadDialog()
             ShowUpLoadDialog()
 
 
-
         }
     }
 
 
-    fun chooseLocalImage(){
+    fun chooseLocalImage() {
         val intent = Intent()
         intent.action = Intent.ACTION_GET_CONTENT
         intent.type = "image/*"
         startActivityForResult(intent, CHOOSE_IMAGE_CODE)
     }
 
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == CHOOSE_IMAGE_CODE){
-            val uri = data?.data ?: return
+        if (requestCode == CHOOSE_IMAGE_CODE) {
+            uploadUri = data?.data!!
             var imageInputStream: InputStream? = null
-            imageInputStream = contentResolver.openInputStream(uri)
-            // 把输入流解析为 Bitmap
-            camera1bufferedImage.value = BitmapFactory.decodeStream(imageInputStream).asImageBitmap()
+            imageInputStream = contentResolver.openInputStream(uploadUri)
+            camera1bufferedImage = BitmapFactory.decodeStream(imageInputStream).asImageBitmap()
+            uploadStatus.value = 2
+        }
+    }
+
+
+    @SuppressLint("Range")
+    fun uriToFileName(uri: Uri): String {
+        return when (uri.scheme) {
+            ContentResolver.SCHEME_FILE -> uri.toFile().name
+            ContentResolver.SCHEME_CONTENT -> {
+                val cursor = context.contentResolver.query(uri, null, null, null, null, null)
+                cursor?.let {
+                    it.moveToFirst()
+                    val displayName = it.getString(it.getColumnIndex(OpenableColumns.DISPLAY_NAME))
+                    cursor.close()
+                    displayName
+                } ?: "${System.currentTimeMillis()}.${
+                    MimeTypeMap.getSingleton()
+                        .getExtensionFromMimeType(context.contentResolver.getType(uri))
+                }}"
+
+            }
+            else -> "${System.currentTimeMillis()}.${
+                MimeTypeMap.getSingleton()
+                    .getExtensionFromMimeType(context.contentResolver.getType(uri))
+            }}"
         }
     }
 
     @Composable
     fun ShowUpLoadDialog() {
-        if (showUpload.value) {
+        if (uploadStatus.value != 0) {
             AlertDialog(
                 modifier = Modifier
                     .padding(12.dp)
                     .wrapContentWidth()
                     .wrapContentHeight(),
                 onDismissRequest = {
-                    showUpload.value = false
+                    uploadStatus.value = 0
                 },
 //                properties = DialogProperties(dismissOnClickOutside = !inProgress.value),
                 title = {},
                 text = {
-                    if (camera1bufferedImage.value == null) {
-                        Button(onClick = {
-                            chooseLocalImage()
-                        }) {
-                            Text(text = "选择文件", )
-                        }
-                    }
+                       if (uploadStatus.value == 1){
+                           Button(onClick = {
+                               chooseLocalImage()
+                           }) {
+                               Text(text = "选择文件", )
+                           }
+                       }else{
+                           Column() {
+                               Box() {
+                                   Image(
+                                       bitmap = camera1bufferedImage!!, contentDescription = "",
+                                       modifier = Modifier
+                                           .fillMaxWidth()
+                                           .align(Alignment.Center)
+                                           .clip(
+                                               RoundedCornerShape(8.dp, 8.dp, 0.dp, 0.dp)
+                                           )
+                                   )
+                               }
+                               if (uploadStatus.value == 3 || uploadStatus.value == 4){
+                                   LinearProgressIndicator(modifier = Modifier.padding(top = 12.dp), progress = uploadrogress.value)
+                               }
+                           }
 
-                    Box(){
-
-                        camera1bufferedImage.value?.let {
-                            Image(bitmap = it, contentDescription = "",
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .align(Alignment.Center)
-                                    .clip(
-                                        RoundedCornerShape(8.dp, 8.dp, 0.dp, 0.dp)
-                                    ))
-                        }
-                    }
+                       }
 
                 },
 
                 confirmButton = {
-                    Button(onClick = { /*TODO*/ }) {
-                        Text(text = "上传")
+
+                    if (uploadStatus.value == 2){
+                        Button(onClick = {
+                            val callback =  object  : ALiOssManager.UploadCallBack{
+                                override fun onProgress(progress: Float) {
+                                    uploadrogress.value = progress
+                                    if (progress == 1f){
+                                        uploadStatus.value  = 4
+                                    }
+                                }
+
+                                override fun onFail() {
+                                    TODO("Not yet implemented")
+                                }
+
+
+                            }
+                            ALiOssManager.upload(uploadUri, currentPath.value, uriToFileName(uploadUri), callback)
+                        }) {
+                            Text(text = "上传")
+                        }
+                    }else if (uploadStatus.value == 4){
+                        Button(onClick = {
+                            uploadStatus.value = 0
+                        }) {
+                            Text(text = "完成")
+                        }
                     }
-
-                },
-
-
-                )
+                }
+            )
         }
     }
 
