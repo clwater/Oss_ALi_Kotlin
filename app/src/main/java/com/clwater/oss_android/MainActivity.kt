@@ -49,28 +49,25 @@ import java.io.InputStream
 
 class MainActivity : ComponentActivity() {
     private lateinit var context: Context
+    //当前路径
     private var currentPath = mutableStateOf("")
     private val mainViewModel: MainViewModel by viewModels()
+    //在dialog显示的图片url
     private val showImageUrl = mutableStateOf("")
+    //在dialog显示的下载图片url
     private val showDownloadImageUrl = mutableStateOf("")
-
-    //    private val showUpload = mutableStateOf(false)
+    //下载进度
     val downloadProgress = mutableStateOf(0f)
+    //是否处于下载中
     val inProgress = mutableStateOf(false)
     private val CHOOSE_IMAGE_CODE = 1
-
+    //上传路径
     private val uploadPath = mutableStateOf("")
-
-
-//    private val bufferedImage: ImageBitmap? = null
-    private var camera1bufferedImage: ImageBitmap? = null
-
-//    private val _uri: ? = null
+    //上传图片信息
+    private var uploadImageBitmap: ImageBitmap? = null
     private var uploadUri : Uri = Uri.EMPTY
-
     //上传进度
     val uploadrogress = mutableStateOf(0f)
-
     //上传Dialog状态
     // 0: 关闭 1: 未选择图片 2: 选择图片完成 3: 图片上传中 4: 图片上传完成
     val uploadStatus = mutableStateOf(0)
@@ -86,14 +83,13 @@ class MainActivity : ComponentActivity() {
 
     private fun initData() {
         ALiOssManager.init(this)
+        //观察数据源并更新ui
         mainViewModel.stsModel.observe(this) {
-            Log.d("gzb", "" + Gson().toJson(it))
             updateView(it)
         }
-//        mainViewModel.getSTSInfo()
-
     }
 
+    //更新compose信息
     private fun updateView(list: List<OSSObjectSummary>) {
         setContent(content = {
             Oss_AndroidTheme {
@@ -113,21 +109,18 @@ class MainActivity : ComponentActivity() {
     }
 
 
-    @Preview
-    @Composable
-    fun preview() {
-        updateView(listOf())
-    }
-
+    //列表显示文件信息
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
     fun OssFile(list: List<OSSObjectSummary>) {
         val isFinish = mainViewModel.isFinish.observeAsState(false)
+        //类似GridLayout排版显示
         LazyVerticalGrid(
             cells = GridCells.Fixed(3),
             modifier = Modifier
                 .fillMaxWidth()
         ) {
+            //依次处理列表信息
             list.forEach { item ->
 
                 item {
@@ -143,11 +136,13 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier
                                 .align(Alignment.CenterHorizontally)
                         ) {
+                            //判断是否为文件夹(阿里Oss中没有文件夹概念, 通过路径进行层次处理)
                             if (item.size != 0L) {
                                 if (Regex(".*?(?:png|jpg|jpeg)").matches(item.key)) {
 
                                     val url =
                                         "https://" + Constants.BUCKET_NAME + ".oss-cn-beijing.aliyuncs.com/" + item.key
+                                    //图片显示数据源
                                     val painter = rememberAsyncImagePainter(
                                         ImageRequest.Builder(LocalContext.current)
                                             .data(data = url)
@@ -189,7 +184,7 @@ class MainActivity : ComponentActivity() {
                                     }
 
                                 } else {
-
+                                    //显示文件
                                     Image(
                                         painterResource(id = R.drawable.ic_twotone_insert_drive_file_64),
                                         contentDescription = "R.drawable.ic_twotone_insert_drive_file_64",
@@ -203,6 +198,7 @@ class MainActivity : ComponentActivity() {
                                 }
 
                             } else {
+                                //显示文件夹
                                 Box(modifier = Modifier.clickable {
                                     if (currentPath.value != item.key) {
                                         currentPath.value = item.key
@@ -231,6 +227,7 @@ class MainActivity : ComponentActivity() {
                                 .background(Color(0xFFCECECE))
                                 .align(Alignment.CenterHorizontally)
                         ) {
+                            //处理文件夹显示路径
                             var fileName = item.key
                             fileName = if (item.size != 0L) {
                                 fileName.split("/").last()
@@ -263,6 +260,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+            //判断是否需要加载更多
             if (isFinish.value.not()) {
 
                 val offset =
@@ -299,6 +297,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    //绘制页面Compose
     fun Greeting(title: String, list: List<OSSObjectSummary>) {
         Column() {
             TopAppBar(title = { Text(text = title) })
@@ -309,6 +308,7 @@ class MainActivity : ComponentActivity() {
             if (paths.size > 1 && paths.last().isEmpty()) {
                 paths.removeLast()
             }
+            //路径显示
             Row(modifier = Modifier.horizontalScroll(scrollState)) {
                 paths.forEach {
                     Box(modifier = Modifier.clickable {
@@ -339,6 +339,7 @@ class MainActivity : ComponentActivity() {
                 OssFile(list)
             }
 
+            //底部button
             Row() {
                 Button(
                     modifier = Modifier.padding(12.dp),
@@ -358,17 +359,18 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-
+            //图片查看dialog
             ShowImageDialog()
+            //下载图片dialog
             ShowDownloadDialog()
+            //上传图片dialog
             ShowUpLoadDialog()
-
-
         }
     }
 
 
-    fun chooseLocalImage() {
+    //选择本地图片
+    private fun chooseLocalImage() {
         val intent = Intent()
         intent.action = Intent.ACTION_GET_CONTENT
         intent.type = "image/*"
@@ -376,19 +378,21 @@ class MainActivity : ComponentActivity() {
     }
 
 
+    //图片选择后返回
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == CHOOSE_IMAGE_CODE) {
             uploadUri = data?.data!!
             var imageInputStream: InputStream? = null
             imageInputStream = contentResolver.openInputStream(uploadUri)
-            camera1bufferedImage = BitmapFactory.decodeStream(imageInputStream).asImageBitmap()
+            uploadImageBitmap = BitmapFactory.decodeStream(imageInputStream).asImageBitmap()
             uploadStatus.value = 2
         }
     }
 
 
     @SuppressLint("Range")
+    //从uri中获取图片名称
     fun uriToFileName(uri: Uri): String {
         return when (uri.scheme) {
             ContentResolver.SCHEME_FILE -> uri.toFile().name
@@ -413,6 +417,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    //显示上传图片dialog
     fun ShowUpLoadDialog() {
         if (uploadStatus.value != 0) {
             AlertDialog(
@@ -423,7 +428,6 @@ class MainActivity : ComponentActivity() {
                 onDismissRequest = {
                     uploadStatus.value = 0
                 },
-//                properties = DialogProperties(dismissOnClickOutside = !inProgress.value),
                 title = {},
                 text = {
                        if (uploadStatus.value == 1){
@@ -436,7 +440,7 @@ class MainActivity : ComponentActivity() {
                            Column() {
                                Box() {
                                    Image(
-                                       bitmap = camera1bufferedImage!!, contentDescription = "",
+                                       bitmap = uploadImageBitmap!!, contentDescription = "",
                                        modifier = Modifier
                                            .fillMaxWidth()
                                            .align(Alignment.Center)
@@ -489,6 +493,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    //图片查看dialog
     private fun ShowImageDialog() {
         if (showImageUrl.value.isNotEmpty()) {
             AlertDialog(
@@ -559,6 +564,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    //图片下载dialog
     private fun ShowDownloadDialog() {
         if (showDownloadImageUrl.value.isNotEmpty()) {
             val name = showDownloadImageUrl.value.replace(

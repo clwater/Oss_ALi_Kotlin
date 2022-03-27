@@ -25,28 +25,30 @@ import java.io.FileOutputStream
  * @date: 2022/3/17
  */
 object ALiOssManager {
-//    private var marker: String? = null
+    //是否完成
     private var isCompleted = false
+    //本地存储路径
     var path : String = ""
 
     private lateinit var oss: OSS
     fun init(context: Context){
-//        path = context.filesDir.absolutePath
+        //获取本地路径
         path = Environment.getExternalStorageDirectory().absolutePath + "/" + context.resources.getString(R.string.app_name)
         checkFile()
         val credentialProvider = OSSAuthCredentialsProvider(Constants.STS_SERVER_URL)
         oss = OSSClient(context, Constants.endpoint, credentialProvider)
     }
 
-    fun checkFile(){
+    //检查本地路径是否存在,
+    private fun checkFile(){
         val file = File(path)
         if (!file.exists()){
             file.mkdir()
         }
     }
 
+    //上传图片
     fun upload(uri: Uri, path: String, name: String, callback: UploadCallBack){
-//        Log.d("gzb", Gson().toJson(uri))
         val put = PutObjectRequest(
             Constants.BUCKET_NAME,
             (path + name),
@@ -112,6 +114,7 @@ object ALiOssManager {
 
     }
 
+    //下载图片
     fun download(url: String, downloadCallBack: DownloadCallBack){
         val get = GetObjectRequest(Constants.BUCKET_NAME, url)
         get.setProgressListener { request, currentSize, totalSize ->

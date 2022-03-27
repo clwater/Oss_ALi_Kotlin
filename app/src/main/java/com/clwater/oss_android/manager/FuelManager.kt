@@ -10,6 +10,7 @@ import com.google.gson.Gson
  * @author: gengzhibo
  * @date: 2022/3/17
  */
+//服务器获取token信息
 object  FuelManager {
     fun getToken(callBack: STSModelCallBack){
         val httpAsync = Constants.STS_SERVER_URL

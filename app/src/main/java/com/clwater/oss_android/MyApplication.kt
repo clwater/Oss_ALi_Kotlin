@@ -10,13 +10,10 @@ import com.alibaba.sdk.android.oss.common.OSSLog
 class MyApplication : Application() {
     override fun onCreate() {
         super.onCreate()
-
         initALiOss()
     }
 
     private fun initALiOss() {
-
-
         OSSLog.enableLog()
     }
 }
